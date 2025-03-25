@@ -10,7 +10,9 @@ import java.awt.image.BufferedImage;
 public class Game implements Runnable {
     private JFrame frame;
     private boolean running = false;
-
+    private BufferedImage superMushroom, oneUpMushroom, fireFlower, coin;
+    private BufferedImage ordinaryBrick, surpriseBrick, groundBrick, pipe;
+    private BufferedImage goombaLeft, goombaRight, koopaLeft, koopaRight, endFlag;
     public Game() {
         init();
     }
@@ -130,9 +132,33 @@ public class Game implements Runnable {
         frame.getContentPane().removeAll();
         frame.repaint();
         System.out.println("Game Started!");
-        // Tambahkan logika untuk masuk ke game loop nanti
+        //membuat sprite
+        BufferedImage sprite = null;
+        try {
+            sprite = ImageIO.read(getClass().getResource("/assets/sprite.png" ));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        this.superMushroom = this.getSubImage(sprite, 2, 5, 48, 48);
+        this.oneUpMushroom= this.getSubImage(sprite, 3, 5, 48, 48);
+        this.fireFlower= this.getSubImage(sprite, 4, 5, 48, 48);
+        this.coin = this.getSubImage(sprite, 1, 5, 48, 48);
+        this.ordinaryBrick = this.getSubImage(sprite, 1, 1, 48, 48);
+        this.surpriseBrick = this.getSubImage(sprite, 2, 1, 48, 48);
+        this.groundBrick = this.getSubImage(sprite, 2, 2, 48, 48);
+        this.pipe = this.getSubImage(sprite, 3, 1, 96, 96);
+        this.goombaLeft = this.getSubImage(sprite, 2, 4, 48, 48);
+        this.goombaRight = this.getSubImage(sprite, 5, 4, 48, 48);
+        this.koopaLeft = this.getSubImage(sprite, 1, 3, 48, 64);
+        this.koopaRight = this.getSubImage(sprite, 4, 3, 48, 64);
+        this.endFlag = this.getSubImage(sprite, 5, 1, 48, 48);
     }
-
+    public BufferedImage getSubImage(BufferedImage image, int col, int row, int w, int h){
+        if((col == 1 || col == 4) && row == 3){ //koopa
+            return image.getSubimage((col-1)*48, 128, w, h);
+        }
+        return image.getSubimage((col-1)*48, (row-1)*48, w, h);
+    }
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Game::new);
     }
