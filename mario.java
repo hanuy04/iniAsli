@@ -37,27 +37,13 @@ public class mario {
         this.jumping = false;
     }
     public BufferedImage ambilspritemariosekarang(boolean toRight, boolean movingInX, boolean movingInY){
-
-        BufferedImage style;
-
-        if(movingInY && toRight){
-            style = animasimario.getRightFrames()[0];
+        if (movingInY) {
+            return toRight ? animasimario.getRightFrames()[0] : animasimario.getLeftFrames()[0];
+        } else if (movingInX) {
+            return animasimario.getCurrentFrame(toRight);
+        } else {
+            return toRight ? animasimario.getRightFrames()[0] : animasimario.getLeftFrames()[0];
         }
-        else if(movingInY){
-            style = animasimario.getLeftFrames()[0];
-        }
-        else if(movingInX){
-            style = animasimario.animate(5, toRight);
-        }
-        else {
-            if(toRight){
-                style = animasimario.getRightFrames()[1];
-            }
-            else
-                style = animasimario.getLeftFrames()[1];
-        }
-
-        return style;
     }
     public BufferedImage[] getLeftFrames(int status) {
         BufferedImage[] leftFrames = new BufferedImage[5];
@@ -141,39 +127,60 @@ public class mario {
         }
         return null;
     }
-    public void gerakmario(boolean toRight, ArrayList<Bricks> listbricks){
-        if(toRight){
-            boolean collision = false;
-            for (Bricks brick : listbricks) {
-                Rectangle batasplayer = this.hadapkanan ? this.dapatkanbatas(3) : this.dapatkanbatas(4);
-                Rectangle batasbricks = !this.hadapkanan ? brick.dapatkanbatas(3) : brick.dapatkanbatas(4);
-                if (batasplayer.intersects(batasbricks)){
-                    collision = true;
-                    this.velX = 0;
-                    if(this.hadapkanan){
-                        this.x = brick.x-this.img.getWidth();
-                    }else{
-                        this.x = brick.x+this.img.getWidth();
-                    }
-                    break;
-                }
-            }
-            if(!collision){
-                this.velX = 5;
-            }
-        }else{
-            this.velX = -5;
-        }
-//        else if(camera.getX() < getX()){
-//            setVelX(-5);
+//    public void gerakmario(boolean toRight, ArrayList<Bricks> listbricks){
+//        if(toRight){
+//            boolean collision = false;
+//            for (Bricks brick : listbricks) {
+//                Rectangle batasplayer = this.hadapkanan ? this.dapatkanbatas(3) : this.dapatkanbatas(4);
+//                Rectangle batasbricks = !this.hadapkanan ? brick.dapatkanbatas(3) : brick.dapatkanbatas(4);
+//                if (batasplayer.intersects(batasbricks)){
+//                    collision = true;
+//                    this.velX = 0;
+//                    if(this.hadapkanan){
+//                        this.x = brick.x-this.img.getWidth();
+//                    }else{
+//                        this.x = brick.x+this.img.getWidth();
+//                    }
+//                    break;
+//                }
+//            }
+//            if(!collision){
+//                this.velX = 5;
+//            }
+//        }else{
+//            this.velX = -5;
 //        }
+////        else if(camera.getX() < getX()){
+////            setVelX(-5);
+////        }
+//
+//        this.hadapkanan = toRight;
+//    }
+    public void gerakmario(boolean keKanan, ArrayList<Bricks> bricks) {
+        this.hadapkanan = keKanan;
+        double speed = 5;
 
-        this.hadapkanan = toRight;
+        if (keKanan) {
+            this.x += speed;
+        } else {
+            this.x -= speed;
+        }
+
+        this.animate(true, false); // true = bergerak horizontal, false = tidak vertical
     }
     public void melompat(){
         if(!this.jumping && !this.falling){
             this.jumping = true;
             this.velY = 10;
         }
+    }
+    public void animate(boolean movingInX, boolean movingInY) {
+        // Perbarui frame animasi setiap kali Mario bergerak
+        if (movingInX || movingInY) {
+            animasimario.update(); // update frame currentIndex
+        }
+
+        // Ambil frame berdasarkan arah dan status gerakan
+        this.img = ambilspritemariosekarang(hadapkanan, movingInX, movingInY);
     }
 }

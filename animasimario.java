@@ -1,35 +1,23 @@
 import java.awt.image.BufferedImage;
 
 public class animasimario {
-    private int index = 0, count = 0;
-    private BufferedImage[] leftFrames, rightFrames;
-    private BufferedImage currentFrame;
+    private BufferedImage[] leftFrames;
+    private BufferedImage[] rightFrames;
+    private int frameIndex = 0;
+    private int frameDelay = 0; // Frame delay agar tidak terlalu cepat
+    private int frameCounter = 0;
 
-    public animasimario(BufferedImage[] leftFrames, BufferedImage[] rightFrames){
-        this.leftFrames = leftFrames;
-        this.rightFrames = rightFrames;
-
-        currentFrame = rightFrames[1];
+    public animasimario(BufferedImage[] left, BufferedImage[] right) {
+        this.leftFrames = left;
+        this.rightFrames = right;
     }
 
-    public BufferedImage animate(int speed, boolean toRight){
-        count++;
-        BufferedImage[] frames = toRight ? rightFrames : leftFrames;
-
-        if(count > speed){
-            nextFrame(frames);
-            count = 0;
+    public void update() {
+        frameCounter++;
+        if (frameCounter >= frameDelay) {
+            frameIndex = (frameIndex + 1) % rightFrames.length;
+            frameCounter = 0;
         }
-
-        return currentFrame;
-    }
-
-    private void nextFrame(BufferedImage[] frames) {
-        if(index + 3 > frames.length)
-            index = 0;
-
-        currentFrame = frames[index+2];
-        index++;
     }
 
     public BufferedImage[] getLeftFrames() {
@@ -38,5 +26,9 @@ public class animasimario {
 
     public BufferedImage[] getRightFrames() {
         return rightFrames;
+    }
+
+    public BufferedImage getCurrentFrame(boolean toRight) {
+        return toRight ? rightFrames[frameIndex] : leftFrames[frameIndex];
     }
 }
