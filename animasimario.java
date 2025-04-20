@@ -4,7 +4,7 @@ public class animasimario {
     private BufferedImage[] leftFrames;
     private BufferedImage[] rightFrames;
     private int frameIndex = 0;
-    private int frameDelay = 0; // Frame delay agar tidak terlalu cepat
+    private int frameDelay = 5;
     private int frameCounter = 0;
 
     public animasimario(BufferedImage[] left, BufferedImage[] right) {

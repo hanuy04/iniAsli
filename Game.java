@@ -11,9 +11,10 @@ import java.util.ArrayList;
 public class Game implements Runnable {
     private JFrame frame;
     private boolean running = false;
-    private boolean isRunning;
     private Thread thread;
     private mario player;
+    private Gameinti gameScreen;
+
     public Game() {
         init();
     }
@@ -27,12 +28,14 @@ public class Game implements Runnable {
         frame.add(new StartScreen());
         frame.setVisible(true);
     }
+
     private synchronized void start() {
         if (running) return; // Cegah thread ganda
         running = true;
         thread = new Thread(this);
         thread.start();
     }
+
     @Override
     public void run() {
         final double FPS = 60.0;
@@ -42,7 +45,6 @@ public class Game implements Runnable {
         long lastTime = System.nanoTime();
         long currentTime;
 
-        // For FPS counter
         long timer = 0;
         int frames = 0;
 
@@ -53,24 +55,24 @@ public class Game implements Runnable {
             lastTime = currentTime;
 
             if (delta >= 1) {
-                if (player != null) {
-                    player.updatelokasi();
+                if (gameScreen != null) {
+                    gameScreen.updateMarioVelocity();
+                    if (gameScreen.getPlayer() != null) {
+                        gameScreen.getPlayer().updatelokasi();
+                    }
                 }
                 frame.repaint();
                 frames++;
                 delta--;
             }
 
-            // Display FPS every second
             if (timer >= 1000000000) {
-//                System.out.println("FPS: " + frames);
                 frames = 0;
                 timer = 0;
             }
 
-            // Sleep to reduce CPU usage
             try {
-                Thread.sleep(1);
+                Thread.sleep(16);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -127,11 +129,11 @@ public class Game implements Runnable {
             super.paintComponent(g);
             BufferedImage gambarbck = null;
             try {
-                gambarbck = ImageIO.read(getClass().getResource("/assets/bckmenu.jpg" ));
+                gambarbck = ImageIO.read(getClass().getResource("/assets/bckmenu.jpg"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            g.drawImage(gambarbck, 0, 0,getWidth(), getHeight(), null);
+            g.drawImage(gambarbck, 0, 0, getWidth(), getHeight(), null);
             g.setColor(Color.WHITE);
             g.setFont(titleFont != null ? titleFont : new Font("Arial", Font.BOLD, 72));
             String title = "Mario Bros";
@@ -175,96 +177,108 @@ public class Game implements Runnable {
             return new Font("Arial", Font.PLAIN, (int) size);
         }
     }
+
     private void startGame() {
         start();
         frame.getContentPane().removeAll();
-        Gameinti gameScreen = new Gameinti();
+        gameScreen = new Gameinti();
         frame.add(gameScreen);
         frame.revalidate();
         frame.repaint();
         gameScreen.requestFocusInWindow();
     }
-    private class Gameinti extends JPanel{
+
+    private class Gameinti extends JPanel {
         private BufferedImage superMushroom, oneUpMushroom, fireFlower, coin;
         private BufferedImage ordinaryBrick, surpriseBrick, groundBrick, pipe;
         private BufferedImage goombaLeft, goombaRight, koopaLeft, koopaRight, endFlag;
         private boolean sudahgambar = false;
         Map mapgame = new Map();
         ArrayList<Bricks> listbricks = new ArrayList<Bricks>();
+        private boolean[] keysPressed = new boolean[256];
+
         public Gameinti() {
             System.out.println("Game Dimulai!");
             addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent e) {
+                    int keyCode = e.getKeyCode();
+                    if (keyCode >= 0 && keyCode < keysPressed.length) {
+                        keysPressed[keyCode] = true;
+                    }
                     if (player == null) return;
-
-                    switch (e.getKeyCode()) {
-                        case KeyEvent.VK_LEFT:
-                            player.gerakmario(false,listbricks);
-                            break;
-                        case KeyEvent.VK_RIGHT:
-                            player.gerakmario(true,listbricks);
-                            break;
+                    switch (keyCode) {
                         case KeyEvent.VK_SPACE:
                             player.melompat();
                             break;
                     }
                 }
+
                 @Override
                 public void keyReleased(KeyEvent e) {
-                    if (player == null) return;
-
-                    switch (e.getKeyCode()) {
-                        case KeyEvent.VK_LEFT:
-                            break;
-                        case KeyEvent.VK_RIGHT:
-                            break;
+                    int keyCode = e.getKeyCode();
+                    if (keyCode >= 0 && keyCode < keysPressed.length) {
+                        keysPressed[keyCode] = false;
                     }
                 }
             });
+        }
+
+        public void updateMarioVelocity() {
+            if (player == null) return;
+
+            boolean leftPressed = keysPressed[KeyEvent.VK_LEFT];
+            boolean rightPressed = keysPressed[KeyEvent.VK_RIGHT];
+
+            if (leftPressed) {
+                player.gerakmario(false, listbricks);
+            } else if (rightPressed) {
+                player.gerakmario(true, listbricks);
+            } else {
+                player.setVelX(0);
+            }
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
+            Toolkit.getDefaultToolkit().sync();
             BufferedImage gambarbck = null;
             try {
-                gambarbck = ImageIO.read(getClass().getResource("/assets/background.png" ));
+                gambarbck = ImageIO.read(getClass().getResource("/assets/background.png"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
             g2.drawImage(gambarbck, 0, 0, null);
-            if(sudahgambar == false){
-                //membuat sprite
+            if (!sudahgambar) {
                 BufferedImage sprite = null;
                 try {
-                    sprite = ImageIO.read(getClass().getResource("/assets/sprite.png" ));
+                    sprite = ImageIO.read(getClass().getResource("/assets/sprite.png"));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                this.superMushroom = this.getSubImage(sprite, 2, 5, 48, 48);
-                this.oneUpMushroom= this.getSubImage(sprite, 3, 5, 48, 48);
-                this.fireFlower= this.getSubImage(sprite, 4, 5, 48, 48);
-                this.coin = this.getSubImage(sprite, 1, 5, 48, 48);
-                this.ordinaryBrick = this.getSubImage(sprite, 1, 1, 48, 48);
-                this.surpriseBrick = this.getSubImage(sprite, 2, 1, 48, 48);
-                this.groundBrick = this.getSubImage(sprite, 2, 2, 48, 48);
-                this.pipe = this.getSubImage(sprite, 3, 1, 96, 96);
-                this.goombaLeft = this.getSubImage(sprite, 2, 4, 48, 48);
-                this.goombaRight = this.getSubImage(sprite, 5, 4, 48, 48);
-                this.koopaLeft = this.getSubImage(sprite, 1, 3, 48, 64);
-                this.koopaRight = this.getSubImage(sprite, 4, 3, 48, 64);
-                this.endFlag = this.getSubImage(sprite, 5, 1, 48, 48);
-                //generate player musuh dan map
+                this.superMushroom = getSubImage(sprite, 2, 5, 48, 48);
+                this.oneUpMushroom = getSubImage(sprite, 3, 5, 48, 48);
+                this.fireFlower = getSubImage(sprite, 4, 5, 48, 48);
+                this.coin = getSubImage(sprite, 1, 5, 48, 48);
+                this.ordinaryBrick = getSubImage(sprite, 1, 1, 48, 48);
+                this.surpriseBrick = getSubImage(sprite, 2, 1, 48, 48);
+                this.groundBrick = getSubImage(sprite, 2, 2, 48, 48);
+                this.pipe = getSubImage(sprite, 3, 1, 96, 96);
+                this.goombaLeft = getSubImage(sprite, 2, 4, 48, 48);
+                this.goombaRight = getSubImage(sprite, 5, 4, 48, 48);
+                this.koopaLeft = getSubImage(sprite, 1, 3, 48, 64);
+                this.koopaRight = getSubImage(sprite, 4, 3, 48, 64);
+                this.endFlag = getSubImage(sprite, 5, 1, 48, 48);
 
-                int ordinaryBrick = new Color(0, 0, 255).getRGB();
-                int surpriseBrick = new Color(255, 255, 0).getRGB();
-                int groundBrick = new Color(255, 0, 0).getRGB();
-                int mario = new Color(160, 160, 160).getRGB();
+                int ordinaryBrickColor = new Color(0, 0, 255).getRGB();
+                int surpriseBrickColor = new Color(255, 255, 0).getRGB();
+                int groundBrickColor = new Color(255, 0, 0).getRGB();
+                int marioColor = new Color(160, 160, 160).getRGB();
                 BufferedImage gambarmap = null;
                 try {
-                    gambarmap = ImageIO.read(getClass().getResource("/assets/maps/Map 1.png" ));
+                    gambarmap = ImageIO.read(getClass().getResource("/assets/maps/Map 1.png"));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -273,25 +287,22 @@ public class Game implements Runnable {
                     for (int y = 0; y < gambarmap.getHeight(); y++) {
 
                         int currentPixel = gambarmap.getRGB(x, y);
-                        int xLocation = x*pixelMultiplier;
-                        int yLocation = y*pixelMultiplier;
+                        int xLocation = x * pixelMultiplier;
+                        int yLocation = y * pixelMultiplier;
 
-                        if (currentPixel == ordinaryBrick) {
+                        if (currentPixel == ordinaryBrickColor) {
                             Bricks brick = new OrdinaryBrick(xLocation, yLocation, this.ordinaryBrick);
                             listbricks.add(brick);
                             mapgame.addBrick(brick);
-                        }
-                        else if (currentPixel == surpriseBrick) {
+                        } else if (currentPixel == surpriseBrickColor) {
                             Bricks brick = new SurpriseBrick(xLocation, yLocation, this.surpriseBrick);
                             listbricks.add(brick);
                             mapgame.addBrick(brick);
-                        }
-                        else if (currentPixel == groundBrick) {
+                        } else if (currentPixel == groundBrickColor) {
                             Bricks brick = new GroundBrick(xLocation, yLocation, this.groundBrick);
                             listbricks.add(brick);
                             mapgame.addGroundBrick(brick);
-                        }
-                        else if (currentPixel == mario) {
+                        } else if (currentPixel == marioColor) {
                             player = new mario(xLocation, yLocation);
                             player.draw(g);
                         }
@@ -299,43 +310,46 @@ public class Game implements Runnable {
                 }
                 mapgame.drawBricks(g2);
                 sudahgambar = true;
-            }else{
+            } else {
                 mapgame.drawBricks(g2);
                 player.draw(g);
             }
-            if(player.jumping){
+            if (player.jumping) {
                 player.falling = true;
             }
             for (Bricks brick : listbricks) {
                 Rectangle brickTopBounds = brick.dapatkanbatas(1);
                 if (player.dapatkanbatas(2).intersects(brickTopBounds)) {
-                    player.y = brick.y - player.img.getHeight()+1;
+                    player.y = brick.y - player.img.getHeight() + 1;
                     player.falling = false;
                     player.velY = 0;
                 }
             }
-            if(player.y + player.img.getHeight() >= 624){
-                player.y = 624-player.img.getHeight();
+            if (player.y + player.img.getHeight() >= 624) {
+                player.y = 624 - player.img.getHeight();
                 player.falling = false;
                 player.velY = 0;
             }
-            Toolkit.getDefaultToolkit().sync();
             g2.dispose();
         }
-        public BufferedImage getSubImage(BufferedImage image, int col, int row, int w, int h){
-            if((col == 1 || col == 4) && row == 3){ //koopa
-                return image.getSubimage((col-1)*48, 128, w, h);
-            }
-            return image.getSubimage((col-1)*48, (row-1)*48, w, h);
+
+        public BufferedImage getSubImage(BufferedImage image, int col, int row, int w, int h) {
+            return image.getSubimage((col - 1) * 48, (row - 1) * 48, w, h);
         }
+
         @Override
         public void addNotify() {
             super.addNotify();
             setFocusable(true);
-            requestFocusInWindow(); // supaya bisa menerima input kalau dibutuhkan
+            requestFocusInWindow();
+        }
+
+        public mario getPlayer() {
+            return player;
         }
     }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(Game::new);
+        new Game();
     }
 }
