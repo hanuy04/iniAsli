@@ -3,8 +3,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
@@ -15,30 +13,31 @@ public class GameSmooth extends Canvas implements Runnable {
     private Thread thread;
     private boolean running = false;
 
-    private enum GameState { MENU, PLAYING }
-    private GameState currentState = GameState.MENU;
+    private enum GameState {
+        MENU, PLAYING
+    }
 
-    private int menuSelection = 0; // 0 menu, 1 game
+    private GameState currentState = GameState.MENU;
+    private int menuSelection = 0;
 
     private mario player;
+
     private Map mapgame = new Map();
+    private Camera camera;
     private ArrayList<Bricks> listBricks = new ArrayList<>();
     private boolean[] keys = new boolean[256];
 
     private BufferedImage background, gameBackground, spriteSheet, selectIcon;
     private BufferedImage ordinaryBrickTex, surpriseBrickTex, groundBrickTex;
-
     private int groundY;
-
     private boolean spaceReleased = true;
-
     private Clip clip;
-
     private Font marioFont;
 
     public GameSmooth() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         loadResources();
+        camera = new Camera();
         initInput();
         initWindow();
         start();
@@ -46,20 +45,17 @@ public class GameSmooth extends Canvas implements Runnable {
 
     private void loadResources() {
         try {
-            background   = ImageIO.read(getClass().getResource("/assets/bckmenu.jpg"));
+            background = ImageIO.read(getClass().getResource("/assets/bckmenu.jpg"));
             gameBackground = ImageIO.read(getClass().getResource("/assets/background.png"));
-
-            spriteSheet  = ImageIO.read(getClass().getResource("/assets/sprite.png"));
-            BufferedImage mapImg = ImageIO.read(getClass().getResource("/assets/maps/Map 1.png"));
-
+            spriteSheet = ImageIO.read(getClass().getResource("/assets/sprite.png"));
             selectIcon = ImageIO.read(getClass().getResource("/assets/select-icon.png"));
-
             marioFont = useFont("/assets/font/mario-font.ttf", 64);
 
             ordinaryBrickTex = getSub(spriteSheet, 1, 1);
             surpriseBrickTex = getSub(spriteSheet, 2, 1);
-            groundBrickTex   = getSub(spriteSheet, 2, 2);
+            groundBrickTex = getSub(spriteSheet, 2, 2);
 
+            BufferedImage mapImg = ImageIO.read(getClass().getResource("/assets/maps/Map 1.png"));
             int pixelSize = 48;
 
             for (int mx = 0; mx < mapImg.getWidth(); mx++) {
@@ -67,17 +63,17 @@ public class GameSmooth extends Canvas implements Runnable {
                     int px = mapImg.getRGB(mx, my);
                     int wx = mx * pixelSize, wy = my * pixelSize;
 
-                    if (px == new Color(160,160,160).getRGB()) {
+                    if (px == new Color(160, 160, 160).getRGB()) {
                         player = new mario(wx, wy);
-                    } else if (px == new Color(0,0,255).getRGB()) {
+                    } else if (px == new Color(0, 0, 255).getRGB()) {
                         OrdinaryBrick ob = new OrdinaryBrick(wx, wy, ordinaryBrickTex);
                         listBricks.add(ob);
                         mapgame.addBrick(ob);
-                    } else if (px == new Color(255,255,0).getRGB()) {
+                    } else if (px == new Color(255, 255, 0).getRGB()) {
                         SurpriseBrick sb = new SurpriseBrick(wx, wy, surpriseBrickTex);
                         listBricks.add(sb);
                         mapgame.addBrick(sb);
-                    } else if (px == new Color(255,0,0).getRGB()) {
+                    } else if (px == new Color(255, 0, 0).getRGB()) {
                         GroundBrick gb = new GroundBrick(wx, wy, groundBrickTex);
                         listBricks.add(gb);
                         mapgame.addGroundBrick(gb);
@@ -85,54 +81,49 @@ public class GameSmooth extends Canvas implements Runnable {
                 }
             }
 
+            // Hitung groundY
             int maxY = 0;
             for (Bricks brick : listBricks) {
                 if (brick instanceof GroundBrick) {
-                    maxY =  (int) Math.max(maxY, brick.y);
+                    maxY = Math.max(maxY, (int) brick.y);
                 }
             }
             groundY = maxY + groundBrickTex.getHeight();
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
     }
 
     private BufferedImage getSub(BufferedImage sheet, int col, int row) {
-        return sheet.getSubimage((col-1)*48, (row-1)*48, 48, 48);
+        return sheet.getSubimage((col - 1) * 48, (row - 1) * 48, 48, 48);
     }
 
     private void initInput() {
         addKeyListener(new KeyAdapter() {
             public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() < keys.length) keys[e.getKeyCode()] = true;
-
+                if (e.getKeyCode() < keys.length)
+                    keys[e.getKeyCode()] = true;
                 if (currentState == GameState.MENU) {
-                    if (e.getKeyCode() == KeyEvent.VK_UP) {
-                        menuSelection = (menuSelection == 0) ? 1 : 0;
-                    } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-                        menuSelection = (menuSelection == 1) ? 0 : 1;
+                    if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_DOWN) {
+                        menuSelection = 1 - menuSelection;
                     } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                        if (menuSelection == 0) {
+                        if (menuSelection == 0)
                             currentState = GameState.PLAYING;
-                        } else {
+                        else
                             System.exit(0);
-                        }
                     }
                 }
-
-                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE)
                     spaceReleased = false;
-                }
             }
 
             public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() < keys.length) keys[e.getKeyCode()] = false;
-
-                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                if (e.getKeyCode() < keys.length)
+                    keys[e.getKeyCode()] = false;
+                if (e.getKeyCode() == KeyEvent.VK_SPACE)
                     spaceReleased = true;
-                }
             }
         });
         setFocusable(true);
@@ -149,7 +140,8 @@ public class GameSmooth extends Canvas implements Runnable {
     }
 
     public synchronized void start() {
-        if (running) return;
+        if (running)
+            return;
         running = true;
         thread = new Thread(this);
         thread.start();
@@ -179,10 +171,8 @@ public class GameSmooth extends Canvas implements Runnable {
     }
 
     private void tick() {
-        if (currentState != GameState.PLAYING || player == null) return;
-
-        if (player == null) return;
-
+        if (currentState != GameState.PLAYING || player == null)
+            return;
         if (keys[KeyEvent.VK_LEFT]) {
             player.gerakmario(false, listBricks);
         } else if (keys[KeyEvent.VK_RIGHT]) {
@@ -190,7 +180,6 @@ public class GameSmooth extends Canvas implements Runnable {
         } else {
             player.setVelX(0);
         }
-
         if (keys[KeyEvent.VK_SPACE]) {
             player.melompat();
             playJumpMusic("/assets/audio/jump.wav");
@@ -198,42 +187,23 @@ public class GameSmooth extends Canvas implements Runnable {
         }
 
         player.updatelokasi();
-
         player.falling = true;
-
-        // Cek tabrakan dengan bricks
         for (Bricks brick : listBricks) {
-            Rectangle topBounds = brick.dapatkanbatas(1);
-            if (player.dapatkanbatas(2).intersects(topBounds)) {
+            Rectangle top = brick.dapatkanbatas(1);
+            if (player.dapatkanbatas(2).intersects(top)) {
                 player.y = brick.y - player.img.getHeight();
                 player.falling = false;
                 player.velY = 0;
                 break;
             }
         }
-
-        // Cek tanah
         if (player.y + player.img.getHeight() >= groundY) {
             player.y = groundY - player.img.getHeight();
             player.falling = false;
             player.velY = 0;
         }
-    }
 
-    private Font useFont(String path, float size) {
-        try {
-            InputStream fontStream = getClass().getResourceAsStream(path);
-            if (fontStream == null) {
-                System.err.println("Font tidak ditemukan: " + path);
-                return new Font("Arial", Font.PLAIN, (int) size);
-            }
-
-            Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream);
-            return font.deriveFont(size);
-        } catch (IOException | FontFormatException e) {
-            e.printStackTrace();
-            return new Font("Arial", Font.PLAIN, (int) size);
-        }
+        camera.update(player);
     }
 
     private void render(BufferStrategy bs) {
@@ -246,9 +216,14 @@ public class GameSmooth extends Canvas implements Runnable {
                     g.drawImage(background, 0, 0, WIDTH, HEIGHT, null);
                     renderMenu(g);
                 } else if (currentState == GameState.PLAYING) {
+                    g.translate(-camera.getX(), 0);
+
                     g.drawImage(gameBackground, 0, 0, null);
                     mapgame.drawBricks(g);
-                    if (player != null) player.draw(g);
+                    if (player != null)
+                        player.draw(g);
+
+                    g.translate(camera.getX(), camera.getY());
                 }
 
                 g.dispose();
@@ -262,14 +237,11 @@ public class GameSmooth extends Canvas implements Runnable {
         g.setColor(Color.WHITE);
         g.setFont(marioFont);
         g.drawString("MARIO BROS", WIDTH / 2 - 250, HEIGHT / 2 - 250);
-
         g.setFont(marioFont.deriveFont(56f));
         g.setColor(menuSelection == 0 ? Color.BLACK : Color.WHITE);
         g.drawString("Start", WIDTH / 2 - 100, HEIGHT / 2);
-
         g.setColor(menuSelection == 1 ? Color.BLACK : Color.WHITE);
         g.drawString("Quit", WIDTH / 2 - 100, HEIGHT / 2 + 80);
-
         int iconY = (menuSelection == 0) ? HEIGHT / 2 - 40 : HEIGHT / 2 + 20;
         g.drawImage(selectIcon, WIDTH / 2 - 150, iconY, null);
     }
@@ -289,11 +261,21 @@ public class GameSmooth extends Canvas implements Runnable {
     private void playJumpMusic(String path) {
         try {
             AudioInputStream audioIn = AudioSystem.getAudioInputStream(getClass().getResource(path));
-            clip = AudioSystem.getClip();
-            clip.open(audioIn);
-            clip.start();
+            Clip jump = AudioSystem.getClip();
+            jump.open(audioIn);
+            jump.start();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private Font useFont(String path, float size) {
+        try {
+            InputStream fontStream = getClass().getResourceAsStream(path);
+            Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream);
+            return font.deriveFont(size);
+        } catch (Exception e) {
+            return new Font("Arial", Font.PLAIN, (int) size);
         }
     }
 

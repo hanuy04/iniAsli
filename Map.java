@@ -3,11 +3,14 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 public class Map {
+    public static final int MAP_WIDTH = 100;
+    public static final int MAP_HEIGHT = 20;
     private ArrayList<Bricks> bricks = new ArrayList<>();
     private ArrayList<Bricks> groundBricks = new ArrayList<>();
     public void addBrick(Bricks brick) {
         this.bricks.add(brick);
     }
+
     public void addGroundBrick(Bricks brick) {
         this.groundBricks.add(brick);
     }
