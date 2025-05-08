@@ -1,4 +1,3 @@
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferStrategy;
@@ -7,6 +6,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
+import javax.swing.*;
 
 public class GameSmooth extends Canvas implements Runnable {
     public static final int WIDTH = 1080, HEIGHT = 720;
@@ -25,10 +25,11 @@ public class GameSmooth extends Canvas implements Runnable {
     private Map mapgame = new Map();
     private Camera camera;
     private ArrayList<Bricks> listBricks = new ArrayList<>();
+    ArrayList<Enemy> enemies = new ArrayList<>();
     private boolean[] keys = new boolean[256];
 
     private BufferedImage background, gameBackground, spriteSheet, selectIcon;
-    private BufferedImage ordinaryBrickTex, surpriseBrickTex, groundBrickTex;
+    private BufferedImage ordinaryBrickTex, surpriseBrickTex, groundBrickTex,goombaLeft,goombaRight,koopaLeft,koopaRight;
     private int groundY;
     private boolean spaceReleased = true;
     private Clip clip;
@@ -51,10 +52,13 @@ public class GameSmooth extends Canvas implements Runnable {
             selectIcon = ImageIO.read(getClass().getResource("/assets/select-icon.png"));
             marioFont = useFont("/assets/font/mario-font.ttf", 64);
 
-            ordinaryBrickTex = getSub(spriteSheet, 1, 1);
-            surpriseBrickTex = getSub(spriteSheet, 2, 1);
-            groundBrickTex = getSub(spriteSheet, 2, 2);
-
+            ordinaryBrickTex = getSub(spriteSheet, 1, 1,48,48);
+            surpriseBrickTex = getSub(spriteSheet, 2, 1,48,48);
+            groundBrickTex = getSub(spriteSheet, 2, 2,48,48);
+            goombaLeft = getSub(spriteSheet, 2, 4, 48, 48);
+            goombaRight = getSub(spriteSheet, 5, 4, 48, 48);
+            koopaLeft = getSub(spriteSheet, 1, 3, 48, 64);
+            koopaRight = getSub(spriteSheet, 4, 3, 48, 64);
             BufferedImage mapImg = ImageIO.read(getClass().getResource("/assets/maps/Map 1.png"));
             int pixelSize = 48;
 
@@ -77,6 +81,13 @@ public class GameSmooth extends Canvas implements Runnable {
                         GroundBrick gb = new GroundBrick(wx, wy, groundBrickTex);
                         listBricks.add(gb);
                         mapgame.addGroundBrick(gb);
+                    }else if (px == new Color(0, 255, 255).getRGB()) {
+                        Enemy enemy = new Enemy(wx, wy, this.goombaLeft, this.goombaRight);
+                        enemies.add(enemy);
+                    }
+                    else if (px == new Color(255, 0, 255).getRGB()) {
+                        Enemy enemy = new Enemy(wx, wy, this.koopaLeft, this.koopaRight);
+                        enemies.add(enemy);
                     }
                 }
             }
@@ -96,8 +107,11 @@ public class GameSmooth extends Canvas implements Runnable {
         }
     }
 
-    private BufferedImage getSub(BufferedImage sheet, int col, int row) {
-        return sheet.getSubimage((col - 1) * 48, (row - 1) * 48, 48, 48);
+    private BufferedImage getSub(BufferedImage image, int col, int row, int w, int h ) {
+        if((col == 1 || col == 4) && row == 3){ //koopa
+            return image.getSubimage((col-1)*48, 128, w, h);
+        }
+        return image.getSubimage((col-1)*48, (row-1)*48, w, h);
     }
 
     private void initInput() {
@@ -145,7 +159,7 @@ public class GameSmooth extends Canvas implements Runnable {
         running = true;
         thread = new Thread(this);
         thread.start();
-        playBackgroundMusic("/assets/audio/background.wav");
+        // playBackgroundMusic("/assets/audio/background.wav");
     }
 
     public void run() {
@@ -204,6 +218,7 @@ public class GameSmooth extends Canvas implements Runnable {
         }
 
         camera.update(player);
+
     }
 
     private void render(BufferStrategy bs) {
@@ -222,10 +237,24 @@ public class GameSmooth extends Canvas implements Runnable {
                     mapgame.drawBricks(g);
                     if (player != null)
                         player.draw(g);
+                    // Update semua enemy
+                    for (Enemy e : enemies) {
+                        e.update(listBricks);
+                    }
 
+                    // Gambar semua enemy
+                    for (Enemy e : enemies) {
+                        e.draw(g);
+                    }
                     g.translate(camera.getX(), camera.getY());
                 }
-
+                for (Enemy e : enemies) {
+                    e.update(listBricks);
+                    player.bounds = new Rectangle((int)player.x, (int)player.y, player.img.getWidth(), player.img.getHeight());
+                    if (player.bounds.intersects(e.getBounds())) {
+                        System.exit(0);
+                    }
+                }                
                 g.dispose();
             } while (bs.contentsRestored());
             bs.show();

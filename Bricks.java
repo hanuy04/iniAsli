@@ -7,12 +7,14 @@ class Bricks {
     double y;
     private boolean breakable;
     private boolean empty;
+    Rectangle bounds;
     public Bricks(BufferedImage image, double x, double y, boolean breakable, boolean empty) {
         this.image = image;
         this.x = x;
         this.y = y;
         this.breakable = breakable;
         this.empty = empty;
+        this.bounds = new Rectangle((int)x, (int)y, 48, 48);
     }
     public Rectangle dapatkanbatas(int status){
         if(status == 1){
@@ -25,7 +27,7 @@ class Bricks {
             return new Rectangle((int)x, (int)y + this.image.getHeight()/4, this.image.getWidth()/4, this.image.getHeight()/2);
         }
         return null;
-    }
+    }   
 }
 class GroundBrick extends Bricks{
     public GroundBrick(double x, double y, BufferedImage image){

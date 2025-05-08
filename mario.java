@@ -1,8 +1,8 @@
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import javax.imageio.ImageIO;
 
 public class mario {
     public double x;
@@ -17,6 +17,7 @@ public class mario {
     public boolean jumping;
     public boolean falling;
     public double gravityAcc = 1;
+    Rectangle bounds;
     public mario(int x, int y) {
         this.x = x;
         this.y = y;
@@ -134,35 +135,31 @@ public class mario {
         }
         return null;
     }
-    public void gerakmario(boolean toRight, ArrayList<Bricks> listbricks){
-        if(toRight){
-            boolean collision = false;
-            for (Bricks brick : listbricks) {
-                Rectangle batasplayer = this.hadapkanan ? this.dapatkanbatas(3) : this.dapatkanbatas(4);
-                Rectangle batasbricks = !this.hadapkanan ? brick.dapatkanbatas(3) : brick.dapatkanbatas(4);
-                if (batasplayer.intersects(batasbricks)){
-                    collision = true;
-                    this.velX = 0;
-                    if(this.hadapkanan){
-                        this.x = brick.x-this.img.getWidth();
-                    }else{
-                        this.x = brick.x+this.img.getWidth();
-                    }
-                    break;
-                }
-            }
-            if(!collision){
-                this.velX = 7;
-            }
-        }else{
-            this.velX = -7;
-        }
-//        else if(camera.getX() < getX()){
-//            setVelX(-5);
-//        }
-
+    public void gerakmario(boolean toRight, ArrayList<Bricks> listbricks) {
         this.hadapkanan = toRight;
+        boolean collision = false;
+        
+        Rectangle batasplayer = toRight ? this.dapatkanbatas(3) : this.dapatkanbatas(4);
+        
+        for (Bricks brick : listbricks) {
+            Rectangle batasbricks = new Rectangle((int)brick.x, (int)brick.y, brick.image.getWidth(), brick.image.getHeight());
+            if (batasplayer.intersects(batasbricks)) {
+                collision = true;
+                this.velX = 0;
+                if (toRight) {
+                    this.x = brick.x - this.img.getWidth();
+                } else {
+                    this.x = brick.x + brick.image.getWidth();
+                }
+                break;
+            }
+        }
+    
+        if (!collision) {
+            this.velX = toRight ? 7 : -7;
+        }
     }
+    
     public void melompat() {
         if (!jumping && !falling) {
             velY = -15;
