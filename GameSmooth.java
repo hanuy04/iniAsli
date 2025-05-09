@@ -191,6 +191,9 @@ public class GameSmooth extends Canvas implements Runnable {
             player.gerakmario(false, listBricks);
         } else if (keys[KeyEvent.VK_RIGHT]) {
             player.gerakmario(true, listBricks);
+        } else if (keys[KeyEvent.VK_ESCAPE]) {
+            restartGame();
+            keys[KeyEvent.VK_ESCAPE] = false;
         } else {
             player.setVelX(0);
         }
@@ -218,7 +221,16 @@ public class GameSmooth extends Canvas implements Runnable {
         }
 
         camera.update(player);
+    }
 
+    private void restartGame() {
+        currentState = GameState.MENU;
+        listBricks.clear();
+        mapgame = new Map();
+        enemies.clear();
+        player = null;
+        loadResources();
+        camera = new Camera();
     }
 
     private void render(BufferStrategy bs) {
@@ -252,7 +264,11 @@ public class GameSmooth extends Canvas implements Runnable {
                     e.update(listBricks);
                     player.bounds = new Rectangle((int)player.x, (int)player.y, player.img.getWidth(), player.img.getHeight());
                     if (player.bounds.intersects(e.getBounds())) {
-                        System.exit(0);
+                        // System.exit(0);
+
+                        // ulang game dari awal
+                        restartGame();
+                        break;
                     }
                 }                
                 g.dispose();
