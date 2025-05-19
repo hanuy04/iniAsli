@@ -4,6 +4,7 @@ import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -21,7 +22,7 @@ public class GameSmooth extends Canvas implements Runnable {
     private int menuSelection = 0;
 
     private mario player;
-
+    private int mapEndX;
     private Map mapgame = new Map();
     private Camera camera;
     private ArrayList<Bricks> listBricks = new ArrayList<>();
@@ -34,6 +35,7 @@ public class GameSmooth extends Canvas implements Runnable {
     private boolean spaceReleased = true;
     private Clip clip;
     private Font marioFont;
+    private int score = 0;
 
     public GameSmooth() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -100,7 +102,7 @@ public class GameSmooth extends Canvas implements Runnable {
                 }
             }
             groundY = maxY + groundBrickTex.getHeight();
-
+            mapEndX = mapImg.getWidth() * 48;
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -217,8 +219,73 @@ public class GameSmooth extends Canvas implements Runnable {
             player.velY = 0;
         }
 
-        camera.update(player);
+        // Update player bounds untuk collision detection
+        player.bounds = new Rectangle((int)player.x, (int)player.y, player.img.getWidth(), player.img.getHeight());
+        
+        // Cek collision dengan enemy
+        checkEnemyCollisions();
 
+        camera.update(player);
+        if (player.x >= mapEndX - player.img.getWidth()) {
+            System.out.println("Selamat! Mario mencapai ujung peta.");
+            System.exit(0);
+        }
+    }
+
+    private void checkEnemyCollisions() {
+        // Buat rectangle untuk bagian bawah player (kaki Mario)
+        Rectangle playerFeet = new Rectangle(
+            (int)player.x + 10,
+            (int)player.y + player.img.getHeight() - 10,
+            player.img.getWidth() - 20,
+            10
+        );
+        
+        // Buat rectangle untuk seluruh tubuh player kecuali kaki
+        Rectangle playerBody = new Rectangle(
+            (int)player.x,
+            (int)player.y,
+            player.img.getWidth(),
+            player.img.getHeight() - 10
+        );
+        
+        Iterator<Enemy> it = enemies.iterator();
+        while (it.hasNext()) {
+            Enemy enemy = it.next();
+            Rectangle enemyHead = new Rectangle(
+                (int)enemy.x + 5,
+                (int)enemy.y,
+                enemy.spriteLeft.getWidth() - 10,
+                10
+            );
+            
+            Rectangle enemyBody = new Rectangle(
+                (int)enemy.x,
+                (int)enemy.y + 10,
+                enemy.spriteLeft.getWidth(),
+                enemy.spriteLeft.getHeight() - 10
+            );
+            
+            // Jika kaki player mengenai kepala enemy dan player sedang jatuh
+            if (playerFeet.intersects(enemyHead) && player.velY > 0) {
+                // Hapus enemy
+                it.remove();
+                
+                // Berikan efek bounce pada player
+                player.velY = -8;
+                
+                // Tambah score
+                score += 100;
+                
+                // Play stomping sound
+                playStompSound("/assets/audio/stomp.wav");
+            }
+            // Jika tubuh player bersentuhan dengan tubuh enemy, game over
+            else if (playerBody.intersects(enemyBody)) {
+                System.out.println("Game Over! Mario menabrak musuh.");
+                System.exit(0);
+            }
+        }
     }
 
     private void render(BufferStrategy bs) {
@@ -237,24 +304,23 @@ public class GameSmooth extends Canvas implements Runnable {
                     mapgame.drawBricks(g);
                     if (player != null)
                         player.draw(g);
+                    
                     // Update semua enemy
                     for (Enemy e : enemies) {
                         e.update(listBricks);
-                    }
-
-                    // Gambar semua enemy
-                    for (Enemy e : enemies) {
                         e.draw(g);
                     }
+
+                    // Tampilkan score
+                    g.translate(camera.getX(), 0);
+                    g.setColor(Color.WHITE);
+                    g.setFont(marioFont.deriveFont(24f));
+                    g.drawString("SCORE: " + score, 20, 30);
+                    g.translate(-camera.getX(), 0);
+                    
                     g.translate(camera.getX(), camera.getY());
                 }
-                for (Enemy e : enemies) {
-                    e.update(listBricks);
-                    player.bounds = new Rectangle((int)player.x, (int)player.y, player.img.getWidth(), player.img.getHeight());
-                    if (player.bounds.intersects(e.getBounds())) {
-                        System.exit(0);
-                    }
-                }                
+                
                 g.dispose();
             } while (bs.contentsRestored());
             bs.show();
@@ -293,6 +359,17 @@ public class GameSmooth extends Canvas implements Runnable {
             Clip jump = AudioSystem.getClip();
             jump.open(audioIn);
             jump.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void playStompSound(String path) {
+        try {
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(getClass().getResource(path));
+            Clip stomp = AudioSystem.getClip();
+            stomp.open(audioIn);
+            stomp.start();
         } catch (Exception e) {
             e.printStackTrace();
         }

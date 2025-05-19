@@ -4,15 +4,15 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 public class Enemy {
-    private int x, y;
-    private int width = 16, height = 16;
-    private int speed = 1;
-    private boolean movingRight = false;
-    private int tickCounter = 0;
-    private int tickRate = 10; // semakin besar nilainya, semakin lambat    
-    private BufferedImage spriteLeft;
-    private BufferedImage spriteRight;
-    private Rectangle bounds;
+    public int x, y;
+    public int width = 16, height = 16;
+    public int speed = 1;
+    public boolean movingRight = false;
+    public int tickCounter = 0;
+    public int tickRate = 20; // semakin besar nilainya, semakin lambat    
+    public BufferedImage spriteLeft;
+    public BufferedImage spriteRight;
+    public Rectangle bounds;
 
     public Enemy(int x, int y, BufferedImage spriteLeft, BufferedImage spriteRight) {
         this.x = x;
